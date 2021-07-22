@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "721906546190",
+    "firebase_url": "https://another-planner-default-rtdb.firebaseio.com",
+    "project_id": "another-planner",
+    "storage_bucket": "another-planner.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:721906546190:android:37aa94788784894e7aae5f",
+        "android_client_info": {
+          "package_name": "com.example.flutter_12june"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "721906546190-olqh37fv1v4lfnn9gsiqamud6b9snja5.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.flutter_12june",
+            "certificate_hash": "f601a001d0d2d59a9f0a267f263a80563d209235"
+          }
+        },
+        {
+          "client_id": "721906546190-nu90mj76hejp2mr5m6bab74ftg4j3ioh.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAyrOxtMMkJSpi57tRnFJilzFX_n8BZlwo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "721906546190-nu90mj76hejp2mr5m6bab74ftg4j3ioh.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -82,7 +82,7 @@ class _phone_scrState extends State<phone_scr> {
                 child: Text("ADD",style: TextStyle(color: textColor),),
                 onPressed: (){
                   FirebaseFirestore.instance.collection("Phonebook").doc(_addCat.text).set(
-                      {"title":_addCat.text});
+                      {"title":_addCat.text,"date":DateTime.now()});
                   _addCat.clear();
                   Navigator.pop(context);
                 },
@@ -218,7 +218,7 @@ class _phone_scrState extends State<phone_scr> {
               height: MediaQuery.of(context).size.height*0.8,
               width: MediaQuery.of(context).size.width*0.9,
           child: StreamBuilder(
-            stream: FirebaseFirestore.instance.collection("Phonebook").snapshots(),
+            stream: FirebaseFirestore.instance.collection("Phonebook").orderBy("date").snapshots(),
             builder: (BuildContext context, AsyncSnapshot<dynamic> snapshot) {
               return ListView.builder(
                 itemCount: snapshot.data.docs.length,

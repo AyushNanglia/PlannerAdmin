@@ -1,3 +1,5 @@
+import 'package:flutter_12june/converter.dart';
+
 import 'test.dart';
 import 'models/eventModel.dart';
 import 'package:auto_size_text/auto_size_text.dart';
@@ -93,11 +95,103 @@ class _cal_scrState extends State<cal_scr> {
     print("set $x");
   }
 
+  Future checkUpdate()async{
+    SharedPreferences p=await SharedPreferences.getInstance();
+    int? bool=p.getInt("toUpdate");
+    if(bool==1){
+      rebuildAllChildren(context);
+      p.setInt("toUpdate", 0);
+    }
+  }
+
+  void rebuildAllChildren(BuildContext context) {
+    void rebuild(Element el) {
+      el.markNeedsBuild();
+      el.visitChildren(rebuild);
+    }
+    (context as Element).visitChildren(rebuild);
+  }
+
+  Future<int> getPref()async{
+    int y;
+    SharedPreferences prefs=await SharedPreferences.getInstance();
+    y=prefs.getInt("month")!;
+    print("get ${prefs.getInt("month")}");
+    return y;
+  }
+
+  List<calEvent> eventList=[];
+
+  Widget eventCard(String event,int date, int month,String isHoliday){
+    var buttonHeight=MediaQuery.of(context).size.height*0.09;
+    Color? eventColor=Colors.white;
+    if(isHoliday=='y')
+      eventColor=Colors.yellow[100];
+    return Container(
+      height: buttonHeight,
+      width: MediaQuery.of(context).size.width*0.8,
+      margin: EdgeInsets.symmetric(vertical: 10.0,horizontal: 20.0),
+      decoration: BoxDecoration(
+        color: bck_col_1,
+        borderRadius: BorderRadius.all(Radius.circular(10.0)),
+      ),
+      child: Row(
+        children: [
+          Expanded(flex: 7,
+            child: Container(
+              decoration: BoxDecoration(
+                color: bck_col_1,
+                borderRadius: BorderRadius.all(Radius.circular(10.0)),
+              ),
+              alignment: Alignment.center,
+              child: AutoSizeText(event,maxLines:2,style: TextStyle(color: textColor,fontSize: buttonHeight*0.25,fontWeight: FontWeight.w300),),
+            ),
+          ),
+          Expanded(flex: 2,
+            child: Container(
+              decoration: BoxDecoration(
+                color: eventColor,
+                borderRadius: BorderRadius.all(Radius.circular(10.0)),
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text("$date",style: TextStyle(color: bck_col_1,fontSize: buttonHeight*0.4),),
+                  Text(intToMonth3(month),style: TextStyle(color: bck_col_1,fontSize: buttonHeight*0.2),),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
 
   @override
   void initState() {
     // TODO: implement initState
     super.initState();
+    eventList=<calEvent>[];
+    DatabaseReference dbRef=FirebaseDatabase.instance.reference().child("Events");
+    dbRef.once().then((DataSnapshot snap){
+      var keys=snap.key;
+      var index=snap.value.length;
+      var value=snap.value;
+      for(int i=0; i<index; i++){
+        calEvent event=new calEvent(
+          eventName:value[i]['event'],
+          eventYear:value[i]['yyyy'],
+          eventIsHoliday:value[i]['holiday'],
+          eventMonth:value[i]['m'],
+          eventDate:value[i]['dd'],
+        );
+        eventList.add(event);
+      }
+      setState(() {});
+      print("> ${eventList[1].eventName}");
+    });
+
     _query=FirebaseDatabase.instance.reference().child("Events");
     setPref(DateTime.now().month);
     //update_Month(3);
@@ -107,6 +201,8 @@ class _cal_scrState extends State<cal_scr> {
 
   @override
   Widget build(BuildContext context) {
+    checkUpdate();
+    String? dropVal="January";
     return updateMonth(
       child: Scaffold(
         backgroundColor: bck_col_0,
@@ -142,13 +238,14 @@ class _cal_scrState extends State<cal_scr> {
               mainAxisAlignment: MainAxisAlignment.start,
               children: [
                 Container(
-                      height: MediaQuery.of(context).size.height*0.1,
+                      height: MediaQuery.of(context).size.height*0.09,
                     ),
 
                 TableCalendar(
                       /*calendarController: _calCon,
                       initialCalendarFormat: CalendarFormat.month,*/
                       startingDayOfWeek: StartingDayOfWeek.monday,
+                      //currentDay: ,
                       headerStyle: HeaderStyle(
                         titleCentered: true,
                           formatButtonVisible: false,
@@ -156,6 +253,10 @@ class _cal_scrState extends State<cal_scr> {
                           titleTextStyle: TextStyle(fontSize:15.0,fontWeight: FontWeight.bold,color: textColor),
                           ),
                       calendarStyle: CalendarStyle(
+                        selectedDecoration: BoxDecoration(color: textColor),
+                        selectedTextStyle: TextStyle(color: bck_col_0),
+                        todayDecoration: BoxDecoration(color: bck_col_1,shape: BoxShape.circle),
+                        todayTextStyle: TextStyle(color: textColor),
                         defaultTextStyle: TextStyle(color:Colors.white),
                         weekendTextStyle: TextStyle(color:Colors.red),
                           /*holidayStyle: TextStyle(color:Colors.red),
@@ -169,44 +270,60 @@ class _cal_scrState extends State<cal_scr> {
                           ),
                   firstDay: DateTime.utc(2000,01,01),
                   lastDay: DateTime.utc(3000,01,01),
+
                   focusedDay: _focusedDay,
-                  onPageChanged: (focusedDay) {
+                  onPageChanged: (focusedDay)async {
+                        SharedPreferences p=await SharedPreferences.getInstance();
+                        p.setInt("toUpdate", 1);
                     _focusedDay = focusedDay;
-                    print(">>>>>${_focusedDay.month}");
-                    /*FirebaseDatabase.instance.reference().child("prefs").set(
-                        {"value": _focusedDay.month});*/
-                    //update_Month(_focusedDay.month);
                     setState(() {
                       setPref(_focusedDay.month);
-                      //update_Month(_focusedDay.month);
-                     // update_Month(_focusedDay.month);
-                      print("->${update_month(_focusedDay.month)}");
-
-                      eveList(3);
                     });
+                    //super.initState();
                   },
                     ),
+                Container(
+                  height: MediaQuery.of(context).size.height*0.5,
+                  width: MediaQuery.of(context).size.width*1.0,
+                  child: FirebaseAnimatedList(
+                    query: _query,
+                    itemBuilder: (BuildContext context, DataSnapshot snapshot, Animation<double> animation, int index) {
+                      Map map=snapshot.value;
+                      return eventCard(map["event"],map["dd"],map["m"],map["holiday"]);
+                    },
+                  )
+                ),
 
-                /*Container(
+                  //color: Colors.white,
+                /*Container
                   child: monthEvents()
                 ),*/
-                Container(
+
+                /*Container(
                       //color: Colors.white,
                       height: MediaQuery.of(context).size.height*0.3,
                       width: MediaQuery.of(context).size.width,
-                    child: monthEvents(),
-                    ),
-                  ],
+                    child: monthEvents(Month: eventList[0].eventDate)
+                  *//*FutureBuilder(
+                      future: getPref(),
+                      builder: (BuildContext context, AsyncSnapshot<dynamic> snapshot) {
+                        int m=snapshot.data;
+                        if(snapshot.hasData) {
+                          return monthEvents(
+                          Month: m,
+                        );
+                      } else return Container(child: Text("No Data!"),);
+
+                      },
+                    ),*//*
+                    ),*/
+
+
+              ],
             ),
           ),
         ),
-        floatingActionButton: FloatingActionButton.extended(
-          onPressed: (){
-            Navigator.push(context, MaterialPageRoute(builder: (context)=>Test()));//viewAllEvents()));
-          },
-          label: Text("VIEW EVENTS"),
-          backgroundColor: homeButtonColor,
-        ),
+
         //floatingActionButton:
       ),
     );
@@ -226,14 +343,25 @@ class _cal_scrState extends State<cal_scr> {
 
 class monthEvents extends StatefulWidget {
   //const monthEvents({Key? key}) : super(key: key);
- /* int month=DateTime.now().month;
-  monthEvents({required this.month});*/
+  int Month=DateTime.now().month;
+  monthEvents({required this.Month});
+
+  //SharedPreferences pref=SharedPreferences.getInstance() as SharedPreferences;
+  //monthEvents(this.pref);
 
   @override
   _monthEventsState createState() => _monthEventsState();
 }
 
 class _monthEventsState extends State<monthEvents> {
+
+  /*Future<int> getPref()async{
+    int y;
+    SharedPreferences prefs=await SharedPreferences.getInstance();
+    y=prefs.getInt("month")!;
+    //print("get ${prefs.getInt("month")}");
+    return y;
+  }*/
 
   late Query _q;
   Widget buildCard(Map map){
@@ -273,13 +401,17 @@ class _monthEventsState extends State<monthEvents> {
     );
   }
 
-  int getPref(){
-    int y;
-    SharedPreferences prefs=SharedPreferences.getInstance() as SharedPreferences;
-    y=prefs.getInt("month")!;
-    print("get ${prefs.getInt("month")}");
-    return y;
+  Future checkUpdate()async{
+    SharedPreferences p=await SharedPreferences.getInstance();
+    int? bool=p.getInt("toUpdate");
+    if(bool==1){
+      setState(() {
+        cal_scr();
+      });
+      p.setInt("toUpdate", 0);
+    }
   }
+
 
   int _month=DateTime.now().month;
 
@@ -288,6 +420,8 @@ class _monthEventsState extends State<monthEvents> {
     // TODO: implement initState
     super.initState();
     _q=FirebaseDatabase.instance.reference().child("Events");
+    widget.Month=DateTime.now().month;
+    //getPref();
     //_month=getPref();
     //_month=getInt();
   }
@@ -295,15 +429,54 @@ class _monthEventsState extends State<monthEvents> {
   @override
   Widget build(BuildContext context) {
     final Month=monthFromCal.of(context).month;
-    print("~$Month");
+    // print("~$Month");
     return FirebaseAnimatedList(
-
-      query: _q.orderByChild("m").equalTo(3),
+      query: _q.orderByChild("m").equalTo(widget.Month),
       itemBuilder: (BuildContext context, DataSnapshot snapshot, Animation<double> animation, int index) {
         Map map=snapshot.value;
+        //checkUpdate();
         return buildCard(map);
       },
     );
   }
+/*Widget build(BuildContext context) {
+    final Month=monthFromCal.of(context).month;
+   // print("~$Month");
+    return FutureBuilder(
+      future: getPref(),
+      builder: (BuildContext context, AsyncSnapshot<dynamic> snapshot) {
+        int m=snapshot.data ?? DateTime.now().month;
+        print("GET $m");
+
+        return FirebaseAnimatedList(
+          query: _q.orderByChild("m").equalTo(m),
+          itemBuilder: (BuildContext context, DataSnapshot snapshot, Animation<double> animation, int index) {
+            Map map=snapshot.value;
+            return buildCard(map);
+          },
+        );
+      },
+
+    );
+  }*/
 }
 
+///DropDown List
+/*DropdownButtonFormField<String>(
+                    value: dropVal,
+                    onChanged: (String? newVal){
+                      setState(() {
+                        dropVal=newVal;
+                      });
+                    },
+                    isExpanded: false,
+                    items: <String>["January","February","March","April","May","June",
+                      "July","August","September","October","November","December"]
+                        .map<DropdownMenuItem<String>>((String value) {
+                      return DropdownMenuItem<String>(
+                        value: value,
+                        child: Text(value,style: TextStyle(color: Colors.white),),
+                      );
+                    }).toList(),
+                    dropdownColor: homeButtonColor,
+                  ),*/

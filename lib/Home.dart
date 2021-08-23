@@ -16,6 +16,13 @@ class _homePageState extends State<homePage> {
   bool _isLoggedIn=false;
   GoogleSignIn gsignin=GoogleSignIn(scopes: ["email"]);
 
+  /*Widget snackBar(){
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text("Sending Message"),
+    ));
+    );
+  }*/
+
   logout(){
     gsignin.signOut();
     Navigator.push(context, MaterialPageRoute(builder: (context)=>loginPage()));
@@ -41,7 +48,7 @@ class _homePageState extends State<homePage> {
           color: appBar_text,
         ),
         actions: [
-          IconButton(icon: Icon(Icons.info_outline,color: appBar_text,), onPressed:()=> logout())
+          IconButton(icon: Icon(Icons.logout_sharp,color: appBar_text,), onPressed:()=> logout())
         ],
       ),
       extendBodyBehindAppBar: true,
@@ -105,6 +112,11 @@ class _homePageState extends State<homePage> {
                   Expanded(flex:6,
                     child: GestureDetector(
                       onTap: (){
+                        /*ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                          content: Text("Invalid login credentials!",style: TextStyle(color: bck_col_0),),
+                          duration: Duration(seconds: 5),
+                          backgroundColor: textColor,
+                        ));*/
                         Navigator.push(context, MaterialPageRoute(builder: (context)=>cal_scr()));
                       },
                       child: Container(
@@ -148,6 +160,10 @@ class _homePageState extends State<homePage> {
                 ],
               ),
             ),
+            Container(
+              alignment: Alignment.bottomCenter,
+                child: Text("Developed by Ayush",style: TextStyle(color: textColor, fontStyle: FontStyle.italic,fontSize: 12.0),)
+            )
           ],
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         ),

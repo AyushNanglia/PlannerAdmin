@@ -30,11 +30,27 @@ class _contact_scrState extends State<contact_scr> {
   /*DatabaseReference db_ref=FirebaseDatabase.instance.reference().child("Deans");
   List<category> list=[];*/
 
+  List<int> DocId=[];
+  List<String> DocName=[];
+
+  getID(){
+
+  }
+
   _launchUrl(String number,bool flag)async{
     var dial;
     if(flag==true){
       if (number.length == 4) dial = "tel:01596 $number";
       else dial="tel:$number";
+    }
+    if (await canLaunch(dial))
+      await launch(dial);
+  }
+
+  _launchEmail(String email,bool flag)async{
+    var dial;
+    if(flag==true){
+      dial = "mailto:$email";
     }
     if (await canLaunch(dial))
       await launch(dial);
@@ -174,12 +190,14 @@ class _contact_scrState extends State<contact_scr> {
                 child: Text("ADD",style: TextStyle(color: textColor),),
                 onPressed: ()async{
                   SharedPreferences pref = await SharedPreferences.getInstance();
-                  int prevIndex = pref.getInt("index") ?? 1;
+                  int prevIndex = pref.getInt("prev_index") ?? -1;
                   int currentIndex = prevIndex + 1;
                   FirebaseDatabase.instance.reference().child("${widget.name}/$currentIndex").set(
                       {"Name":_NameCont!.text, "Design":_desigCont!.text, "Mobile":_mobileCont!.text,
                         "IP Home":_IPhomeCont!.text,"IP Direct":_IPdirectCont!.text,"IP Office":_IPofficeCont!.text,
                         "LL Home":_LLhomeCont!.text,"LL Office":_IPofficeCont!.text,"Category":widget.name});
+
+                  pref.setInt("prev_index", currentIndex);
 
                   _NameCont!.clear();_desigCont!.clear();_mobileCont!.clear();_IPofficeCont!.clear();
                   _IPdirectCont!.clear();_IPhomeCont!.clear();_LLhomeCont!.clear();_LLofficeCont!.clear();
@@ -202,6 +220,16 @@ class _contact_scrState extends State<contact_scr> {
     );
   }
 
+  Future contactsLength()async{
+    SharedPreferences prefs=await SharedPreferences.getInstance();
+    int len;
+    FirebaseDatabase.instance.reference().child(widget.name).once().then((DataSnapshot snap){
+      len=snap.value.length;
+      prefs.setInt("prev_index", len-1);
+      print(len);
+    });
+  }
+
   Future editCont(String Name,int index){
     String? dropVal="Name";
     return showDialog(context: context,
@@ -221,7 +249,7 @@ class _contact_scrState extends State<contact_scr> {
                   },
                   isExpanded: false,
                   items: <String>["Name","Design","Mobile","IP Direct","IP Home","IP Office",
-                    "LL Home","LL Office"]
+                    "Email"]
                       .map<DropdownMenuItem<String>>((String value) {
                     return DropdownMenuItem<String>(
                       value: value,
@@ -230,18 +258,6 @@ class _contact_scrState extends State<contact_scr> {
                   }).toList(),
                   dropdownColor: homeButtonColor,
                 ),
-                    /*DropdownButtonFormField(
-                      isExpanded: false,
-
-                        items: <String>[
-                          "Meh","Wew","Heh"
-                        ].map<DropdownMenuItem<String>>((String value) {
-                          return DropdownMenuItem<String>(
-                            value: value,
-                            child: Text(value,style: TextStyle(color: Colors.white),),
-                          );
-                        }).toList(),
-                    ),*/
                     TextField(
                       controller: _editCont,
                       cursorColor: bck_col_1,
@@ -255,7 +271,11 @@ class _contact_scrState extends State<contact_scr> {
                         labelStyle: TextStyle(color:bck_col_1),
                         //counterStyle: TextStyle(color:bck_col_1),
                       ),
-                    )
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Text("For updating email, enter the username only (Domain will be added automatically)",style: TextStyle(color: bck_col_1,fontSize: 12.0),),
+                    ),
                   ],
                 )
             ),
@@ -264,7 +284,24 @@ class _contact_scrState extends State<contact_scr> {
                 child: Text("UPDATE",style: TextStyle(color: textColor),),
                 onPressed: (){
                   //print("$dropVal:"+_editCont.text);
-                  FirebaseDatabase.instance.reference().child("${widget.name}/$index").update({dropVal!:_editCont!.text});
+                  if(dropVal=="Email") {
+                          if (_editCont!.text.length == 1)
+                            FirebaseDatabase.instance
+                                .reference()
+                                .child("${widget.name}/$index")
+                                .update({
+                              dropVal!: _editCont!.text
+                            });
+                          else
+                            FirebaseDatabase.instance
+                                .reference()
+                                .child("${widget.name}/$index")
+                                .update({
+                              dropVal!: "${_editCont!.text}@pilani.bits-pilani.ac.in"
+                            });
+                        }
+                  else
+                    FirebaseDatabase.instance.reference().child("${widget.name}/$index").update({dropVal!:_editCont!.text});
                   //db_ref.child(index.toString()).update({dropVal!:_editCont!.text});
                   _editCont!.clear();
                   Navigator.pop(context);
@@ -284,10 +321,58 @@ class _contact_scrState extends State<contact_scr> {
     );
   }
 
+  Future delCont(Map map,int index){
+    return showDialog(context: context,
+        builder: (BuildContext context){
+          return AlertDialog(
+            title: Text("Confirm Deletion"),
+            content: SingleChildScrollView(
+                child:ListBody(
+                  children: [
+                    Text("Are you sure you want to delete this contact?"),
+                    Text("Name: ${map["Name"]}"),
+                    //Text("All it's contents will be permanently deleted",style:TextStyle(color:Colors.red,fontSize: 12.0))
+                  ],
+                )
+            ),
+            actions: [
+              FlatButton(
+                child: Text("Yes"),
+                onPressed: (){
+                  //FirebaseDatabase.instance.reference().child("${widget.name}/${map["Key"]}").remove();
+                  var r=FirebaseDatabase.instance.reference().child("${widget.name}").orderByChild("Key").equalTo(map["Key"]).reference();
+                  print(r);
+                  FirebaseDatabase.instance.reference().child(widget.name).once().then((DataSnapshot snap){
+                    var Data=snap.value;
+                    print(Data.length);
+                    for(int i=map["Key"]+1; i<=Data.length-1; i++){
+                      FirebaseDatabase.instance.reference().child("${widget.name}/$i").update(
+                          {"Key": i - 1
+                      });
+                    }
+                    //print(Data);
+                  });
+                  setState(() {});
+                  Navigator.pop(context);
+                },
+              ),
+              FlatButton(
+                child: Text("No"),
+                onPressed: (){
+                  //FirebaseFirestore.instance.collection("Phonebook").doc(Title).delete();
+                  Navigator.pop(context);
+                },
+              ),
+            ],
+          );
+        }
+    );
+  }
+
   Widget phoneCard(String type,String number){
     var butColor;
     var isAvail=true;
-    if(number=="0") {
+    if(number.length==1) {
       butColor = Colors.grey;
       isAvail=false;
     } else butColor=Colors.green;
@@ -300,6 +385,28 @@ class _contact_scrState extends State<contact_scr> {
           IconButton(
               icon: Icon(Icons.local_phone_sharp,color: butColor,),
               onPressed:()=>_launchUrl(number, isAvail),
+          )
+        ],
+      ),
+    );
+  }
+
+  Widget emailCard(String email){
+    var butColor;
+    var isAvail=true;
+    if(email.length==1) {
+      butColor = Colors.grey;
+      isAvail=false;
+    } else butColor=Colors.yellowAccent[700];
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal:20.0,vertical:5.0),
+      child:Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text("Email",style: TextStyle(color: textColor),),
+          IconButton(
+            icon: Icon(Icons.email_sharp,color: butColor,),
+            onPressed:()=>_launchEmail(email, isAvail),
           )
         ],
       ),
@@ -337,9 +444,21 @@ class _contact_scrState extends State<contact_scr> {
               phoneCard("IP-Direct",map["IP Direct"].toString()),
               phoneCard("IP-Home",map["IP Home"].toString()),
               phoneCard("IP-Office",map["IP Office"].toString()),
-              phoneCard("LL-Home",map["LL Home"].toString()),
-              phoneCard("LL-Office",map["LL Office"].toString()),
-              IconButton(onPressed:()=>editCont(map["Name"],index), icon: Icon(Icons.edit,color: Colors.white,))
+              emailCard(map["Email"].toString()),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                 IconButton(onPressed:()=>editCont(map["Name"],index), icon: Icon(Icons.edit,color: Colors.white,)),
+                  /*IconButton(
+                      onPressed:() {
+                        var p=FirebaseDatabase.instance.reference().child("${widget.name}/${map["Key"]}").key;
+                        print(p);
+                        delCont(map, index);
+                      },
+                      icon: Icon(Icons.delete,color: Colors.white,)
+                  ),*/
+                ],
+              )
             ],
           ),
 
@@ -354,7 +473,11 @@ class _contact_scrState extends State<contact_scr> {
   void initState() {
     // TODO: implement initState
     super.initState();
+    FirebaseDatabase.instance.reference().child(widget.name).once().then((DataSnapshot snap){
+
+    });
     FirebaseDatabase.instance.setPersistenceEnabled(true);
+    contactsLength();
     //_dbRef=new QueryEvent;
     _dbRef=FirebaseDatabase.instance.reference().child(widget.name);
     _editCont=TextEditingController();
@@ -413,56 +536,12 @@ class _contact_scrState extends State<contact_scr> {
               ),
         ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
+      /*floatingActionButton: FloatingActionButton.extended(
         onPressed: addCont,
         label: Text("ADD CONTACT"),
         foregroundColor: bck_col_1,
         backgroundColor: textColor,
-      ),
+      ),*/
     );
   }
 }
-/*
-
-class dropDown extends StatefulWidget {
-  const dropDown({Key? key}) : super(key: key);
-
-  @override
-  _dropDownState createState() => _dropDownState();
-}
-
-class _dropDownState extends State<dropDown> {
-
-  String? dropVal="Name";
-  String? holder;
-
-  void getDropDownItem(){
-    setState(() {
-      holder = dropVal ;
-    });
-  }
-  @override
-  Widget build(BuildContext context) {
-    return DropdownButtonFormField<String>(
-      value: dropVal,
-
-
-      onChanged: (String? newVal){
-        setState(() {
-          dropVal=newVal;
-        });
-      },
-      isExpanded: false,
-        items: <String>["Name","Design","Mobile","IP Direct","IP Home","IP Office",
-        "LL Home","LL Office"]
-            .map<DropdownMenuItem<String>>((String value) {
-          return DropdownMenuItem<String>(
-            value: value,
-            child: Text(value,style: TextStyle(color: Colors.white),),
-          );
-        }).toList(),
-        dropdownColor: homeButtonColor,
-    );
-  }
-}
-*/

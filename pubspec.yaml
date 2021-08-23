@@ -62,7 +62,9 @@ flutter:
   assets:
     - images/bits_logo.png
     - images/bits_IAL.png
+    - images/bits_IAL_f.png
     - images/google_logo.png
+    - images/bits_logo_cropped.png
   #   - images/a_dot_ham.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see

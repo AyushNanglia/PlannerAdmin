@@ -1,28 +1,34 @@
 
 
 class calEvent{
-  String eventName,eventDate,eventMonth,eventYear,eventIsHoliday;
+  String eventName,eventIsHoliday;
+  int eventDate,eventMonth,eventYear;
 
-  calEvent({required this.eventName,required this.eventDate,required this.eventMonth,
-  required this.eventYear,required this.eventIsHoliday});
+  calEvent(
+      {required this.eventName,
+      required this.eventDate,
+      required this.eventMonth,
+      required this.eventYear,
+      required this.eventIsHoliday});
 
   /*factory calEvent.fromJSON(Map<dynamic,dynamic> json){
 
   }*/
 
-  factory calEvent.fromSnap(Map<dynamic,dynamic> snap){
+  /*factory calEvent.fromSnap(Map<dynamic,dynamic> snap){
     return calEvent(
-        eventName: snap["event"],
+        snap["event"],
         eventDate: snap["dd"].toString(),
         eventMonth: snap["m"].toString(),
         eventYear: snap["yyyy"].toString(),
         eventIsHoliday: snap["holiday"]
     );
-  }
+  }*/
 
 }
 
 
+/*
 class eventList{
   List<calEvent> eventsList=[];
   eventList({required this.eventsList});
@@ -40,3 +46,4 @@ class eventList{
   }
 
 }
+*/

@@ -15,16 +15,20 @@ class _loginPageState extends State<loginPage> {
 
   login()async{
     try{
-      ///await gsignin.signIn();
-      //if(gsignin.isSignedIn()==true)
-      Navigator.push(context, MaterialPageRoute(builder: (context)=>homePage()));
+      //await gsignin.signIn();
+      await gsignin.signIn();
+        Navigator.push(context, MaterialPageRoute(builder: (context)=>homePage()));
       setState(() {
         _isLoggedIn=true;
       });
 
     }
     catch(err){
-      print(err);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text("Use institute email only!",style: TextStyle(color: bck_col_0),),
+        duration: Duration(seconds: 5),
+        backgroundColor: textColor,
+      ));
     }
   }
 
@@ -53,7 +57,7 @@ class _loginPageState extends State<loginPage> {
                     children:[
                       Text("PLANNER",style: TextStyle(color: textColor,fontWeight: FontWeight.w300,fontSize: buttonHeight),),
                       Text("Calendar | Phonebook",style: TextStyle(color: textColor,fontWeight: FontWeight.w300,fontSize: buttonHeight*0.45)),
-                      Container(width: MediaQuery.of(context).size.width*0.6,child: Image(image: AssetImage("images/bits_IAL.png"),fit: BoxFit.fitWidth,),),
+                      Container(width: MediaQuery.of(context).size.width*0.7,height: MediaQuery.of(context).size.height*0.05,child: Image(image: AssetImage("images/bits_IAL_f.png"),fit: BoxFit.fitWidth,),),
                     ]
                 ),
               ),
@@ -98,9 +102,10 @@ class _loginPageState extends State<loginPage> {
             Expanded(flex:6,
               child: Container(
                 alignment: Alignment.bottomCenter,
-                height: MediaQuery.of(context).size.height*0.1,
-                width: MediaQuery.of(context).size.width*0.55,
-                child: Image(image:AssetImage("images/bits_logo.png"),fit: BoxFit.cover,),
+                padding: EdgeInsets.symmetric(vertical: 20.0),
+                height: MediaQuery.of(context).size.height*0.2,
+                width: MediaQuery.of(context).size.width*0.2,
+                child: Image(image:AssetImage("images/bits_logo_cropped.png"),fit: BoxFit.cover,),
               ),
             ),
           ],
